@@ -993,14 +993,36 @@ SugarCube.Engine.play("NextPassage");</script><tw-passagedata pid="1" name="Game
 $(document).one(&#39;:passagedisplay&#39;, function () {
   const v = State.variables;
 
-  // 설문 다음 단계에서는 가로채기 무장되면 곤란하니, 여기서는 반드시 해제
   v._armGO = false;           // &#39;다음 [[ ]] 클릭 가로채기&#39; 비활성
   // 본편 진입 전에는 아직 허용 상태가 아님 (탐사 지속으로만 켜지게 유지)
   v.allowContinue = false;    
   v.continueOverride = false; // 이전 세션에서 남았을 수도 있는 override 해제
 
   // (선택) 설문을 반드시 거치게 하고 싶으면 아래 가드 사용:
-  // if (!v.persona) { SugarCube.Engine.play(&#39;Survey&#39;); }
+   if (!v.persona) { SugarCube.Engine.play(&#39;Survey&#39;); }
+});
+
+/* ── 이 페이지에 들어오면 즉시 가방 초기화 ── */
+(function () {
+  const v = State.variables;
+  v.bag = [];            // $bag 비우기
+  v.bagOpen = false;     // 가방 닫힘으로
+  try {
+    // 영구 저장도 초기화
+    localStorage.setItem(&#39;bag&#39;, &#39;[]&#39;);   // 또는: localStorage.removeItem(&#39;bag&#39;);
+  } catch (e) {}
+})();
+
+/* 이 페이지는 프롤로그이므로: 바 숨김(no-bar) + 가로채기/허용 플래그들 정리 */
+$(document).one(&#39;:passagedisplay&#39;, function () {
+  const v = State.variables;
+
+  v._armGO = false;          // &#39;다음 [[ ]] 클릭 가로채기&#39; 비활성
+  v.allowContinue = false;   // 본편 진입 전 허용 아님
+  v.continueOverride = false;
+
+  // (선택) 설문을 반드시 거치게 하고 싶으면:
+  if (!v.persona) { SugarCube.Engine.play(&#39;Survey&#39;); }
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="StoryInit" tags="" position="1325,125" size="100,100">&lt;&lt;set $persona to $persona or &quot;dream&quot;&gt;&gt;  /* 기본값 */
 
@@ -1297,7 +1319,10 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="14" name="프로필" tags="" position="1225,125" size="100,100">:: StoryInit
+&lt;/p&gt;
+
+
+[[START]] </tw-passagedata><tw-passagedata pid="14" name="프로필" tags="" position="1225,125" size="100,100">:: StoryInit
 &lt;&lt;set $persona to $persona or &quot;dream&quot;&gt;&gt;  /* 기본값 */
 
 &lt;&lt;set $lex to $lex or {
