@@ -105,7 +105,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="루미에르 시어터" startnode="7" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="16C2F5B3-1A65-425B-B46E-20113B1993C1" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* === 기본 UI바 테마(PC+모바일 공통) === */
+	<tw-storydata name="루미에르 시어터" startnode="27" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="16C2F5B3-1A65-425B-B46E-20113B1993C1" options="debug" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* === 기본 UI바 테마(PC+모바일 공통) === */
 #ui-bar {
   background-color: #000;
   color: #B8860B;
@@ -192,6 +192,15 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   font-size: 0.8em;         /* 작은 글씨 */
   color: #888;              /* 회색 */
 }
+
+
+#pollution-bar-container .label .loc {
+  color: #bbb;          /* 회색 */
+  font-weight: normal;  /* 라벨은 굵게, 위치는 보통 */
+  margin-left: .35em;
+  font-size: .8em;
+}
+
 
 /* PC 전용: 사이드바 이미지만 보이게 */
 @media (min-width: 769px) {
@@ -747,7 +756,51 @@ a.link-internal:hover {
   margin: 0 0.5em 0 0 !important;
   padding: 0 !important;
   vertical-align: middle;
-}</style><script role="script" id="twine-user-script" type="text/twine-javascript">// ───────────────────────────────────────────────────────────
+}</style><script role="script" id="twine-user-script" type="text/twine-javascript">
+/* === Pollution Bar: display with location tag === */
+(function () {
+  'use strict';
+
+  $(document).on(':passagedisplay', function (ev) {
+    var S = State, V = State.variables;
+
+    // 현재 패시지 태그 읽기
+    var passageObj = Story.get(S.passage);
+    var tags = (passageObj && passageObj.tags) ? passageObj.tags : [];
+    var isGameOver = tags.includes('GameOver');
+    var hasHide    = tags.includes('hide-pollution');
+
+    // 위치 태그
+    var LOC_TAGS = ['1층', '2층', '지하', '바깥'];
+    var loc = null;
+    for (var i = 0; i < LOC_TAGS.length; i++) {
+      if (tags.indexOf(LOC_TAGS[i]) !== -1) { loc = LOC_TAGS[i]; break; }
+    }
+
+    if (typeof V.pollution !== 'number') V.pollution = 0;
+    V.pollution = Math.max(0, Math.min(100, V.pollution));
+
+    // 기존 바 제거
+    $('#pollution-bar-container').remove();
+    if (hasHide || isGameOver) return;
+
+    var labelHTML = '오염도' + (loc ? ' <span class="loc">- 위치 ' + loc + '</span>' : '');
+
+    var html =
+      '<div id="pollution-bar-container">' +
+        '<span class="label" style="color:crimson;font-weight:bold;display:block;margin-bottom:0.25em;">' + labelHTML + '</span>' +
+        '<div id="pollution-bar" style="width:100%;height:8px;background:#333;">' +
+          '<div class="bar" style="height:100%;background:crimson;transition:width .5s;"></div>' +
+        '</div>' +
+        '<div class="note" style="margin-top:.25em;font-size:.8em;color:#888;">※ 100% 도달 시 위험한 일이 발생할 수도 있습니다.</div>' +
+      '</div>';
+
+    var $container = $(html);
+    $container.find('.bar').css('width', V.pollution + '%');
+    $(ev.content).prepend($container);
+  });
+})();
+// ───────────────────────────────────────────────────────────
 // 1) 디버그 끄기
 Config.debug = false;
 
@@ -849,7 +902,8 @@ $(document).one(':passagerender', function() {
 const POLL_INCREMENT = 1;
 
 /* 숨김 태그 */
-const EXCLUDE_TAGS = ['no-bar', 'no-bar2', 'no-bar3'];
+const EXCLUDE_TAGS = ['no-bar'];
+
 
 /* 노이즈 옵션 */
 const NOISE_CHARS = ['※','†','§','¤','▦','▧','▨','▩','▒','▓','어?뭔가이상한데?','상태가이상해','내가그렇게잘못한거야?','그만욕해!','그만해!','사라져주면되잖아','돌아가!','당장꺼져!','제발그만!','사실죽고싶지않아...','내말좀들어줘','믿어줘!','복수할거야','두고봐!','너도죽어','싫다...','무서워'];
@@ -923,13 +977,11 @@ v.hijackedSetter = anchor.getAttribute('data-setter')
   }, true); // 캡처 단계
 }
 
-/* 1) 패시지 렌더링: 오염 계산/바/토스트/노이즈 */
+/* === Pollution calc + spike toast + noise === */
 $(document).on(':passagerender', function (ev) {
-  const v = State.variables;
+  const v     = State.variables;
   const title = ev.passage.title;
   const tags  = ev.passage.tags;
-  const hasTag = tags.some(t => EXCLUDE_TAGS.includes(t));
-  const isGameOver = (title === 'GameOver');
 
   // 기본값
   if (typeof v.pollution !== 'number')       v.pollution        = 0;
@@ -938,13 +990,13 @@ $(document).on(':passagerender', function (ev) {
   if (typeof v.returnTo === 'undefined')     v.returnTo         = null;
   if (typeof v.justSpiked === 'undefined')   v.justSpiked       = 0;
 
-  // ① 스파이크 태그 처리 (spike30 등 합산)
-  const spike = tags.reduce(function (sum, t) {
+  // 스파이크 태그 처리: spike30 등
+  const spike = tags.reduce((sum, t) => {
     const m = /^spike(\d{1,3})$/i.exec(t);
     return sum + (m ? parseInt(m[1], 10) : 0);
   }, 0);
   if (spike > 0) {
-    const before = (typeof v.pollution === 'number') ? v.pollution : 0;
+    const before = v.pollution;
     const after  = Math.min(100, Math.max(0, before + spike));
     v.pollution  = after;
     v.justSpiked = after - before;
@@ -952,36 +1004,18 @@ $(document).on(':passagerender', function (ev) {
     v.justSpiked = 0;
   }
 
-  // ② 오염도 바 렌더/증가 (GameOver/숨김 태그 제외)
-  $('#pollution-bar-container').remove();
-  if (!hasTag && !isGameOver) {
-    if (!v.justSpiked) {
-      v.pollution = Math.min(v.pollution + POLL_INCREMENT, 100);
-    }
-    const $container = $(
-      '<div id="pollution-bar-container">' +
-        '<span class="label" style="color:crimson;font-weight:bold;display:block;margin-bottom:0.25em;">오염도</span>' +
-        '<div id="pollution-bar" style="width:100%;height:8px;background:#333;"><div class="bar" style="height:100%;background:crimson;transition:width .5s;"></div></div>' +
-        '<div class="note" style="margin-top:.25em;font-size:.8em;color:#888;">※ 100% 도달 시 위험한 일이 발생할 수도 있습니다.</div>' +
+  // 스파이크 토스트(깜빡)
+  if (v.justSpiked > 0) {
+    const $toast = $(
+      '<div class="poll-spike-toast spike-flicker" ' +
+      'style="display:inline-block;margin-left:.5em;font-size:.9em;color:red;text-shadow:0 0 4px rgba(255,0,0,.45);">' +
+      '[주의!] 오염도 급증 +' + v.justSpiked +
       '</div>'
     );
-    $container.find('.bar').css('width', v.pollution + '%');
-    $(ev.content).prepend($container);
-
-    // ②-1 스파이크 토스트 (지속 깜빡)
-    if (v.justSpiked > 0) {
-      const $toast = $(
-        '<div class="poll-spike-toast spike-flicker" ' +
-          'style="display:inline-block;margin-left:.5em;font-size:.9em;color:red;' +
-                 'text-shadow:0 0 4px rgba(255,0,0,.45);">' +
-           '[주의!] 오염도 급증 +' + v.justSpiked +
-        '</div>'
-      );
-      $(ev.content).find('#pollution-bar-container .label').append($toast);
-    }
+    $(ev.content).find('#pollution-bar-container .label').append($toast);
   }
 
-  // ③ 노이즈: 오염 100% && 계속 진행 허용 상태에서만
+  // 노이즈: 오염 100% & 진행 허용 상태에서만
   if (v.pollution >= 100 && v.allowContinue) {
     const $root = $(ev.content);
     if (!$root.data('noised')) {
@@ -993,6 +1027,7 @@ $(document).on(':passagerender', function (ev) {
   // 사용 후 초기화
   v.justSpiked = 0;
 });
+
 
 /* 2) 패시지 디스플레이: '다음 [[…]] 클릭 가로채기' 무장 + 복귀 타겟 저장 */
 $(document).on(':passagedisplay', function (ev) {
@@ -1006,14 +1041,7 @@ $(document).on(':passagedisplay', function (ev) {
     v.returnTo = ev.passage.title;  // 현재 페이지를 복귀 타겟으로 확정
   }
   // console.log('armGO?', v._armGO, 'returnTo=', v.returnTo, 'allowContinue=', v.allowContinue, 'override=', v.continueOverride);
-});
-
-
-
-
-
-
-SugarCube.Engine.play("NextPassage");</script><tw-passagedata pid="1" name="GameOver" tags="" position="1250,200" size="100,100">&lt;&lt;link &quot;탐사를 지속한다&quot;&gt;&gt;
+});</script><tw-passagedata pid="1" name="GameOver" tags="" position="1250,200" size="100,100">&lt;&lt;link &quot;탐사를 지속한다&quot;&gt;&gt;
   &lt;&lt;set $allowContinue = true&gt;&gt;
   &lt;&lt;set $continueOverride = true&gt;&gt;
   &lt;&lt;set $_armGO = false&gt;&gt;
@@ -1034,23 +1062,23 @@ SugarCube.Engine.play("NextPassage");</script><tw-passagedata pid="1" name="Game
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="NextPassage" tags="" position="1125,3200" size="100,100">&lt;br&gt;의상실 안의 공기가 싸늘하게 식어 있습니다.
 
-캄캄한 방 안은 밖의 화장대의 전구에서 나오는 빛만이 희미하게 비추고 있습니다.
+바깥의 화장대의 전구에서 나오는 빛만이 컴컴한 방 안을 희미하게 비추고 있습니다.
 
 의상실 안에는 각기 다른 옷을 입은 세 개의 마네킹이 우뚝 서 있습니다.
-머리에 눈이 없음에도 묘하게 이쪽을 보고 있는 듯한 느낌입니다.
+그들은 눈이 없음에도 묘하게 이쪽을 보고 있는 듯한 느낌입니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;비로드 드레스&lt;/b&gt;&lt;/span&gt;
-&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;ㅡ 극의 여주인공 토스카 배역의 의상&lt;/span&gt;
+&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;ㅡ 극의 여주인공 토스카 배역 의상&lt;/span&gt;
 목 부분에 진주 장식이 걸려 있고, 검붉은 색의 드레스가 입혀져 있습니다.
-마네킹의 머리는 부드러운 곱슬 가발로 장식되어 있으나, 얼굴에 검붉은 자국이 잔뜩 묻어 있습니다.
+마네킹의 머리는 부드러운 곱슬 가발로 장식되어 있으나, 검붉은 게 잔뜩 엉겨붙어 있습니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;예술가 복장&lt;/b&gt;&lt;/span&gt;
-&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;ㅡ 젊은 혁명가이자 화가인 카라바도시 배역의 의상&lt;/span&gt;
+&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;ㅡ 젊은 혁명가, 화가인 카라바도시 배역 의상&lt;/span&gt;
 흰 셔츠와 베이지색 바지, 물감 얼룩이 묻은 화가용 앞치마가 입혀져 있습니다.
 마네킹의 목이 90도로 꺾여서 고개를 한쪽으로 늘어뜨리고 있습니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;경관 제복&lt;/b&gt;&lt;/span&gt;
-&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;ㅡ 로마의 경찰청장인 스카르피아 배역의 의상&lt;/span&gt;
+&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;ㅡ 로마의 경찰청장 스카르피아 배역 의상&lt;/span&gt;
 금장 단추가 달린 검은 장교 코트, 붉은 어깨 견장, 권총집이 보입니다.
 마네킹 얼굴에 쓰여진 하얀 가면 위에 웃는 입 모양만 뚫려져 있고, 입꼬리가 조금 찢겨 있습니다.
 
@@ -1207,7 +1235,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   // (선택) 설문을 반드시 거치게 하고 싶으면:
   if (!v.persona) { SugarCube.Engine.play(&#39;Survey&#39;); }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="8" name="START2" tags="no-bar2" position="1000,525" size="100,100">&lt;span style=&quot;color: yellow; font-weight: bold; font-size: 24px;&quot;&gt;《Qterw-X-803》&lt;/span&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="8" name="START2" tags="no-bar" position="1000,525" size="100,100">&lt;span style=&quot;color: yellow; font-weight: bold; font-size: 24px;&quot;&gt;《Qterw-X-803》&lt;/span&gt;
 
 
 &lt;span class=&quot;inline-one&quot;&gt;&lt;&lt;term &quot;어둠&quot;&gt;&gt;&lt;/span&gt; 진입 후, 당신은 팀원과 묘한 감각을 느끼며 눈을 뜹니다.
@@ -1222,7 +1250,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 관객으로 보이는 이들이 옷깃을 여미며 웃고, 거리의 버스커가 재즈풍의 선율을 연주하고 있습니다.
 
-간만의 &lt;span class=&quot;inline-one&quot;&gt;&lt;&lt;term &quot;어둠&quot;&gt;&gt;&lt;/span&gt;이 으스스한 장소가 아닌 들뜬 분위기군요.
+간만의 &lt;span class=&quot;inline-one&quot;&gt;&lt;&lt;term &quot;어둠&quot;&gt;&gt;&lt;/span&gt;이 으스스한 장소가 아닌 들뜬 분위기입니다.
 그동안 바빠서 문화 생활이라고는 즐기지 못했는데, 나들이를 온 것 같은 기분이 듭니다.
 
 
@@ -1564,7 +1592,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 &lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;
 [[▶ 즉시 탈출 아이템 사용!-&gt;키링-상황]]&lt;&lt;else&gt;&gt;
-[[▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="▶ 가만히 서 있는다" tags="" position="1000,1400" size="100,100">&lt;br&gt;무대 위, 눈부신 조명이 눈을 찌릅니다.
+[[▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="▶ 가만히 서 있는다" tags="1층" position="1000,1400" size="100,100">&lt;br&gt;무대 위, 눈부신 조명이 눈을 찌릅니다.
 스포트라이트에 시야가 가려 관객석이 잘 보이지 않습니다.
 
 열기와 먼지가 섞인 공기가 목구멍을 자극하고, 숨이 묘하게 가빠집니다.
@@ -1649,7 +1677,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="14" name="▶ 거부한다" tags="" position="1275,1375" size="100,100">&lt;span class=&quot;rumble-red-italic&quot;&gt;&lt;span class=&quot;inline-one&quot;&gt;&lt;&lt;term &quot;어둠&quot;&gt;&gt;&lt;/span&gt; 속에서 발버둥 쳐 봤자 오염도만 올라갈 텐데......? 어머, 정말 여기 놀러온 줄 아셨어요? ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ&lt;/span&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="14" name="▶ 거부한다" tags="1층" position="1275,1375" size="100,100">&lt;br&gt;&lt;span class=&quot;rumble-red-italic&quot;&gt;&lt;span class=&quot;inline-one&quot;&gt;&lt;&lt;term &quot;어둠&quot;&gt;&gt;&lt;/span&gt; 속에서 발버둥 쳐 봤자 오염도만 올라갈 텐데......? 어머, 정말 여기 놀러온 줄 아셨어요? ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ&lt;/span&gt;
 
 
 [[▶ 받아들인다-&gt;▶ 순응한다]]
@@ -1836,7 +1864,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 치렁치렁한 긴 머리에 드레스를 입고 있는 것을 보니, &lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;젊은 여성&lt;/b&gt;&lt;/span&gt;인 듯합니다.
 
 
-[[▶ 윗층으로 이동]]
+[[▶ 2층으로 이동]]
 [[▶ 여성의 인영을 확인한다]]
 
 
@@ -1869,7 +1897,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 [[▶ 물건을 가방 안에 챙긴다|소독제_획득]]
 
 
-  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="27" name="▶ 극장의 뒤쪽을 살펴본다" tags="" position="675,375" size="100,100">&lt;br&gt;건물의 뒤편으로 이동했습니다.
+  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="27" name="▶ 극장의 뒤쪽을 살펴본다" tags="바깥" position="675,375" size="100,100">&lt;br&gt;건물의 뒤편으로 이동했습니다.
 왁자지껄한 극장 앞과 달리, 이곳은 고요한 정적이 깔려 있습니다.
 
 저 멀리서 들려오는 사람들의 웃음소리와 대화가, 마치 두꺼운 벽을 사이에 둔 듯 웅웅 울리며 흐릿하게 들립니다.
@@ -1890,7 +1918,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="28" name="▶ 끝까지 이동해 본다" tags="" position="500,1875" size="100,100">&lt;br&gt;결국 복도의 끝을 확인하기로 마음먹습니다.
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="28" name="▶ 끝까지 이동해 본다" tags="" position="550,1875" size="100,100">&lt;br&gt;결국 복도의 끝을 확인하기로 마음먹습니다.
 하지만 걸음을 옮길수록, 끝은 오히려 더 멀어지는 것만 같습니다.
 
 &lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;돌아가자.&lt;/b&gt;&lt;/span&gt;
@@ -1970,7 +1998,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 &lt;&lt;/if&gt;&gt;
 
 [[▶ 다른 녹화본 추가 확인-&gt;▶ 모니터링실]]
-[[▶ 모니터링실 밖으로 나간다]]</tw-passagedata><tw-passagedata pid="33" name="▶ 다시 돌아간다" tags="" position="575,2025" size="100,100">&lt;br&gt;결국 복도 탐색을 멈추고 돌아가기로 결정합니다.
+[[▶ 모니터링실 밖으로 나간다]]</tw-passagedata><tw-passagedata pid="33" name="▶ 다시 돌아간다" tags="" position="575,2050" size="100,100">&lt;br&gt;결국 복도 탐색을 멈추고 돌아가기로 결정합니다.
 다행히...... 돌아가는 길에 위험한 무언가와 맞닥뜨리지는 않았습니다.
 
 저 멀리서 탁자의 &lt;span style=&quot;color: gold;&quot;&gt;노란 빛&lt;/span&gt;이 보입니다.
@@ -1990,7 +2018,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 
 [[▶ 선물 박스를 확인한다]]
-[[▶ 건드리지 않고 윗층 이동-&gt;▶ 윗층으로 이동]]
+[[▶ 건드리지 않고 윗층 이동-&gt;▶ 2층으로 이동]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -2075,7 +2103,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 &lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;
 [[▶ 즉시 탈출 아이템 사용!-&gt;키링-로비]]&lt;&lt;else&gt;&gt;
-[[▶ 즉시 탈출 아이템 사용!-&gt;▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="37" name="▶ 매표소를 방문한다" tags="" position="1000,700" size="100,100">&lt;br&gt;입구 근처 매표소 앞으로 발걸음을 옮깁니다.
+[[▶ 즉시 탈출 아이템 사용!-&gt;▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="37" name="▶ 매표소를 방문한다" tags="바깥" position="1000,700" size="100,100">&lt;br&gt;입구 근처 매표소 앞으로 발걸음을 옮깁니다.
 
 극장 입구 중앙의 작은 매표 부스에는 유리창 너머로 정장 차림의 남자 직원이 고정된 자세로 앉아 있습니다.
 
@@ -2120,7 +2148,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 녹화본1]]
 [[▶ 녹화본2]]
-[[▶ 녹화본3]]</tw-passagedata><tw-passagedata pid="39" name="▶ 모니터링실 밖으로 나간다" tags="" position="1000,3875" size="100,100">[[▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="40" name="▶ 무대 객석으로 이동" tags="" position="1000,1050" size="100,100">&lt;br&gt;공연이 펼쳐지는 메인 홀 안으로 이동합니다.
+[[▶ 녹화본3]]</tw-passagedata><tw-passagedata pid="39" name="▶ 모니터링실 밖으로 나간다" tags="" position="1000,3875" size="100,100">[[▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="40" name="▶ 무대 객석으로 이동" tags="1층" position="1000,1050" size="100,100">&lt;br&gt;공연이 펼쳐지는 메인 홀 안으로 이동합니다.
 객석은 화려한 조명 아래, 기대감에 찬 웃음과 박수로 들썩이고 있습니다.
 
 이따금 스치는 대화와 웃음이 공기 속에 번지며, 모두가 커튼이 오를 순간을 기다리고 있습니다.
@@ -2244,7 +2272,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="46" name="▶ 문을 열어본다" tags="" position="600,775" size="100,100">&lt;br&gt; 당신은 난간을 잡은 손에 힘을 주고, 살짝 열린 철문을 밀어젖힙니다.
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="46" name="▶ 문을 열어본다" tags="바깥" position="600,775" size="100,100">&lt;br&gt; 당신은 난간을 잡은 손에 힘을 주고, 살짝 열린 철문을 밀어젖힙니다.
 &lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;철문이 끼이이익— 하고 길게 비명을 지릅니다.&lt;/span&gt;
 
 안쪽 바닥에는 검고 긴 생머리의 젊은 여성이 쓰러져 있습니다.
@@ -2399,7 +2427,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 진주 구슬.
 하지만 표면의 틈새마다 검붉은 액체가 마치 살아 있는 것처럼 천천히 번져 나갑니다.
-귀를 기울이면, 그 작은 구슬에서 심장 박동 같은 둔탁한 울림이 미약하게 전해집니다.</tw-passagedata><tw-passagedata pid="53" name="▶ 빈 좌석에 앉는다" tags="" position="1025,1225" size="100,100">&lt;br&gt;빈 좌석에 앉자, 무대 위 커튼이 천천히 열리며 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;화려한 조명&lt;/b&gt;&lt;/span&gt;이 쏟아집니다.
+귀를 기울이면, 그 작은 구슬에서 심장 박동 같은 둔탁한 울림이 미약하게 전해집니다.</tw-passagedata><tw-passagedata pid="53" name="▶ 빈 좌석에 앉는다" tags="1층" position="1000,1200" size="100,100">&lt;br&gt;빈 좌석에 앉자, 무대 위 커튼이 천천히 열리며 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;화려한 조명&lt;/b&gt;&lt;/span&gt;이 쏟아집니다.
 
 관객들의 시선은 모두 무대 위에 등장한 배우들에게 향한 듯했지만—  
 &lt;span class=&quot;gray-italic&quot;&gt;이상하게도, 어느 순간 그 시선이 점점 당신 쪽으로 몰립니다.&lt;/span&gt;
@@ -2508,7 +2536,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="59" name="▶ 순응한다" tags="" position="825,1300" size="100,100">&lt;br&gt;순식간에 &lt;span class=&quot;rumble-red&quot;&gt;&lt;b&gt;괴상한 빨간 손&lt;/b&gt;&lt;/span&gt;에 이끌려 무대 위로 올라왔습니다.
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="59" name="▶ 순응한다" tags="1층" position="825,1300" size="100,100">&lt;br&gt;순식간에 &lt;span class=&quot;rumble-red&quot;&gt;&lt;b&gt;괴상한 빨간 손&lt;/b&gt;&lt;/span&gt;에 이끌려 무대 위로 올라왔습니다.
 
 관객들은 모두 웃고 환호하며 박수를 칩니다.
 주변을 둘러보니 관객들의 안구는 모두 유리 구슬처럼 텅 비어 있습니다.
@@ -2572,7 +2600,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 
 [[▶ 흔들어 깨운다]]
-[[▶ 조용히 커튼을 닫는다]]</tw-passagedata><tw-passagedata pid="62" name="▶ 신문을 확인한다" tags="" position="1000,2300" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _isNew = !$bag.includes(&quot;newspaper&quot;)&gt;&gt;&lt;&lt;bagAdd &quot;newspaper&quot;&gt;&gt;&lt;&lt;/silently&gt;&gt;
+[[▶ 조용히 커튼을 닫는다]]</tw-passagedata><tw-passagedata pid="62" name="▶ 신문을 확인한다" tags="" position="1025,2300" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _isNew = !$bag.includes(&quot;newspaper&quot;)&gt;&gt;&lt;&lt;bagAdd &quot;newspaper&quot;&gt;&gt;&lt;&lt;/silently&gt;&gt;
 &lt;span style=&quot;color:#C7C7C7; font-style:italic;&quot;&gt;&lt;b&gt;루미에르 극장 신인 여배우, 공연 ‘토스카’ 이후 투신해 사망&lt;/b&gt;
 경찰 “범죄 정황 없음…정확한 경위 수사”
 
@@ -2585,8 +2613,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 편지 봉투를 확인한다]]
 [[▶ 주변을 더 살펴본다-&gt;▶ 그냥 지나친다]]
-[[▶ 통로 안쪽으로 이동]]
-
+[[▶ 계단으로 이동]]
 
 &lt;&lt;if _isNew&gt;&gt;
 &lt;span class=&quot;notice-ok&quot;&gt;당신은 [구겨진 신문]을 가방 안에 넣었습니다.&lt;/span&gt;
@@ -2599,7 +2626,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="63" name="▶ 어둠(재난)으로 진입한다" tags="no-bar3" position="1000,400" size="100,100">안녕하세요.
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="63" name="▶ 어둠(재난)으로 진입한다" tags="no-bar" position="1000,400" size="100,100">안녕하세요.
 탐사 전 간단한 설문조사를 진행합니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;strong&gt;당신의 소속은 어디입니까?&lt;/strong&gt;&lt;br&gt;&lt;/span&gt;
@@ -2723,7 +2750,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
 &lt;/p&gt;</tw-passagedata><tw-passagedata pid="66" name="▶ 예술가 복장 확인" tags="" position="1250,3425" size="100,100"></tw-passagedata><tw-passagedata pid="67" name="▶ 오케스트라 피트" tags="" position="1950,1200" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="68" name="▶ 옥상 계단" tags="" position="1825,2275" size="100,100">🚨 죽는 루트
 
-[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="69" name="▶ 외부의 비상계단" tags="" position="525,625" size="100,100">&lt;br&gt; 녹슨 철제 비상계단의 난간을 붙잡고 천천히 발을 옮깁니다.
+[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="69" name="▶ 외부의 비상계단" tags="바깥" position="525,625" size="100,100">&lt;br&gt; 녹슨 철제 비상계단의 난간을 붙잡고 천천히 발을 옮깁니다.
 
 &lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;철판이 발 아래서 ‘끼익’ 하고 울부짖으며 아래로 무너질 듯 기우뚭니다.&lt;/span&gt;
 
@@ -2754,27 +2781,13 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="70" name="▶ 우선 몸부터 피한다" tags="" position="725,900" size="100,100"></tw-passagedata><tw-passagedata pid="71" name="▶ 우선 몸을 피한다" tags="" position="450,1000" size="100,100">[[▶ 노점으로 이동-&gt;▶ 노점상]]
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="70" name="▶ 우선 몸부터 피한다" tags="" position="775,850" size="100,100"></tw-passagedata><tw-passagedata pid="71" name="▶ 우선 몸을 피한다" tags="" position="450,1000" size="100,100">[[▶ 노점으로 이동-&gt;▶ 노점상]]
 [[▶ 어두움 골목길로 이동-&gt;▶ 골목길]]
-[[▶ 즉시 로비로 향하는 출입구]]</tw-passagedata><tw-passagedata pid="72" name="▶ 우측 복도" tags="" position="1150,2525" size="100,100">[[▶ 조명실]]
+[[▶ 즉시 로비로 향하는 출입구]]</tw-passagedata><tw-passagedata pid="72" name="▶ 우측 복도" tags="" position="1125,2675" size="100,100">[[▶ 조명실]]
 [[▶ 옥상 계단]]
 
-[[▶ 통로 안쪽으로 이동]]
-</tw-passagedata><tw-passagedata pid="73" name="▶ 윗층으로 이동" tags="" position="975,2625" size="100,100">&lt;br&gt;윗층으로 오르는 나무 계단은 습기에 절어 색이 짙게 변해 있습니다.
-
-계단 끝에 도달하면 양옆으로 복도가 쭉 펼쳐져 있습니다.
-
-좌측 복도는 어디선가 흘러나오는 노란 조명이 길게 뻗어 있습니다.
-
-우측 복도는 완전히 어둠에 잠겨 있습니다.
-한 발자국만 들어가도 빛이 닿지 않는 검은 물속에 들어가는 듯한 착각을 줍니다.
-
-
-
-
 [[▶ 좌측 복도]]
-[[▶ 우측 복도]]
-[[▶ 1층으로 이동-&gt;▶ 통로 안쪽으로 이동]]</tw-passagedata><tw-passagedata pid="74" name="▶ 의상실 확인" tags="" position="1100,3000" size="100,100">&lt;div style=&quot;margin-bottom: 0;&quot;&gt;
+[[▶ 지하로 이동]]</tw-passagedata><tw-passagedata pid="73" name="▶ 의상실 확인" tags="" position="1100,3000" size="100,100">&lt;div style=&quot;margin-bottom: 0;&quot;&gt;
   의상실의 문이 잠겨 있습니다.
   안쪽으로 입장하려면 비밀번호를 입력해야 합니다.
   
@@ -2860,7 +2873,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="75" name="▶ 이곳에 없습니다" tags="" position="450,1750" size="100,100">&lt;br&gt; 차갑고 끈적한 손들이 목을 조릅니다.
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="74" name="▶ 이곳에 없습니다" tags="" position="450,1750" size="100,100">&lt;br&gt; 차갑고 끈적한 손들이 목을 조릅니다.
 폐 속의 공기를 서서히, 그러나 집요하게 짜내고 있습니다.
 
 심장이 귀 옆에서 &lt;span class=&quot;rumble-red&quot;&gt;&lt;b&gt;쿵… 쿵… 쿵!&lt;/b&gt;&lt;/span&gt; 하고
@@ -2874,7 +2887,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 &lt;span class=&quot;expand-red&quot;&gt;이제 한 번만 더 조여오면, 모든 것이 끊어질 것만 같습니다.&lt;/span&gt;
 
 
-[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="76" name="▶ 이름표를 문질러 본다" tags="" position="375,1275" size="100,100">&lt;b&gt;이상하게 시선이 그 그림에 확 붙들려 이름표 위에 손을 뻗습니다.
+[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="75" name="▶ 이름표를 문질러 본다" tags="" position="375,1275" size="100,100">&lt;b&gt;이상하게 시선이 그 그림에 확 붙들려 이름표 위에 손을 뻗습니다.
 
 엄지로 먼지를 슥 훑어내자, 표면이 끈적하게 미끄러지며 서서히 글자가 드러납니다.
 
@@ -2906,7 +2919,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="77" name="▶ 있습니다" tags="" position="250,1375" size="100,100">&lt;br&gt;당신의 시야가 완전히 어둠 속에 잠기려는 그때ㅡ
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="76" name="▶ 있습니다" tags="" position="250,1375" size="100,100">&lt;br&gt;당신의 시야가 완전히 어둠 속에 잠기려는 그때ㅡ
 
 &lt;span class=&quot;shake&quot;&gt;&lt;span style=&quot;color: red&quot;&gt;&lt;b&gt;쾅!&lt;/b&gt;&lt;/span&gt;&lt;/span&gt;
 
@@ -2944,7 +2957,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="78" name="▶ 장치실" tags="" position="2250,2775" size="100,100">무대 밑으로 이어진 장치실
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="77" name="▶ 장치실" tags="" position="2250,2775" size="100,100">무대 밑으로 이어진 장치실
 &lt;&lt;silently&gt;&gt;
   &lt;&lt;set _isNew = !$bag.includes(&quot;deviceChecklist&quot;)&gt;&gt;
   &lt;&lt;if _isNew&gt;&gt;&lt;&lt;bagAdd &quot;deviceChecklist&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
@@ -2967,7 +2980,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="79" name="▶ 접힌 쪽지를 확인한다" tags="" position="925,2825" size="100,100">&lt;&lt;silently&gt;&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="78" name="▶ 접힌 쪽지를 확인한다" tags="" position="925,2825" size="100,100">&lt;&lt;silently&gt;&gt;
   /* 새로 얻은 경우에만 추가 */
   &lt;&lt;set _newNote = !$bag.includes(&quot;crewNote&quot;)&gt;&gt;
   &lt;&lt;if _newNote&gt;&gt;&lt;&lt;bagAdd &quot;crewNote&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
@@ -2997,27 +3010,29 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="80" name="▶ 조금 더 빠르게 걷는다" tags="" position="375,2025" size="100,100">&lt;br&gt;당신은 조금 더 빠르게 걸어 봅니다.
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="79" name="▶ 조금 더 빠르게 걷는다" tags="" position="175,1950" size="100,100">&lt;br&gt;당신은 서둘러 돌아가기 위해 조금 더 빠르게 걷습니다.
 
 &lt;span style=&quot;font-style: italic;&quot;&gt;똑같은 조명이, 균열이, 쓰레기가 또다시 반복됩니다.
 복도는 마치 잘못된 필름을 되감듯 같은 장면을 끝없이 이어붙입니다.&lt;/span&gt;
 
 그리고 문득 깨닫습니다.
 
-&lt;span class=&quot;buoy-red&quot;&gt;— ‘돌아간다’는 개념이, 이곳엔 애초에 존재하지 않는다는 사실을.&lt;/span&gt;
+
+&lt;span class=&quot;expand-red&quot;&gt;&lt;span style=&quot;font-style: italic; color: red; font-size:21px;&quot;&gt;&lt;span class=&quot;buoy-red&quot;&gt;— ‘돌아간다’는 개념이, 이곳엔 애초에 존재하지 않는다는 사실을.......&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;
+
 
 &lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;
 [[▶ 즉시 탈출 아이템 사용!-&gt;키링2]]&lt;&lt;else&gt;&gt;
-[[▶ 즉시 탈출 아이템 사용!-&gt;▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="81" name="▶ 조명실" tags="" position="1700,2500" size="100,100">🚨윗층 조명실에는 기괴한 스태프가 있다.
+[[▶ 즉시 탈출 아이템 사용!-&gt;▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="80" name="▶ 조명실" tags="" position="1700,2500" size="100,100">🚨윗층 조명실에는 기괴한 스태프가 있다.
 이 사람에게 눈알 캔디를 주면 CCTV 녹화본에 대한 힌트를 주고,
 머랭 쿠키를 주면 잡아먹힌다.
 
 
-[[▶ 윗층으로 이동]]</tw-passagedata><tw-passagedata pid="82" name="▶ 조용히 커튼을 닫는다" tags="" position="1825,2850" size="100,100">🚨 시민 구조 못함.
+[[▶ 윗층으로 이동]]</tw-passagedata><tw-passagedata pid="81" name="▶ 조용히 커튼을 닫는다" tags="" position="1825,2850" size="100,100">🚨 시민 구조 못함.
 
 
 [[▶ 분장실]]   
-[[▶ 단장 사무실]]</tw-passagedata><tw-passagedata pid="83" name="▶ 좌측 복도" tags="" position="800,2600" size="100,100">&lt;br&gt;좌측로 이어진 복도 또한 &lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;컴컴하고 눅눅&lt;/b&gt;&lt;/span&gt;합니다.
+[[▶ 단장 사무실]]</tw-passagedata><tw-passagedata pid="82" name="▶ 좌측 복도" tags="" position="750,2550" size="100,100">&lt;br&gt;계단으로 올라온 건물의 윗층 또한 &lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;컴컴하고 눅눅&lt;/b&gt;&lt;/span&gt;한 장소입니다.
 
 두 사람의 발자국 소리가 &lt;span class=&quot;shake2&quot;&gt;&lt;b&gt;터벅, 터벅&lt;/b&gt;&lt;/span&gt; 규칙적으로 울리다 벽에 부딪혀 메아리칩니다.
 
@@ -3041,8 +3056,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 [[▶ 단장 사무실]]
 [[▶ 스태프 휴게실]]
 
-[[▶ 우측 복도]]
-[[▶ 지하로 이동]]
+[[▶ 다시 중앙으로 이동-&gt;▶ 2층으로 이동]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -3050,7 +3064,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="84" name="▶ 즉시 로비로 향하는 출입구" tags="" position="275,1125" size="100,100"></tw-passagedata><tw-passagedata pid="85" name="▶ 즉시 탈출 아이템 사용!" tags="" position="150,1575" size="100,100">&lt;span style=&quot;text-decoration: underline double;&quot;&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="83" name="▶ 즉시 로비로 향하는 출입구" tags="" position="275,1125" size="100,100"></tw-passagedata><tw-passagedata pid="84" name="▶ 즉시 탈출 아이템 사용!" tags="" position="150,1575" size="100,100">&lt;span style=&quot;text-decoration: underline double;&quot;&gt;
 ▶ 탈출 성공&lt;br&gt;
 ▶▶ 클리어 실패
 &lt;/span&gt;
@@ -3061,7 +3075,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   &lt;br&gt;&lt;br&gt;
   탐사 종료 후 보고서 제출 시, 매뉴얼 제작에 큰 도움이 됩니다.&lt;br&gt;
   &lt;span style=&quot;color: grey;&quot;&gt;※ 양식은 탐사 규칙 게시물 확인 요망&lt;/span&gt;
-&lt;/span&gt;</tw-passagedata><tw-passagedata pid="86" name="▶ 지시에 따른다" tags="" position="1000,1650" size="100,100">&lt;br&gt;서로 몇 마디를 주고받는 순간ㅡ
+&lt;/span&gt;</tw-passagedata><tw-passagedata pid="85" name="▶ 지시에 따른다" tags="" position="1000,1650" size="100,100">&lt;br&gt;서로 몇 마디를 주고받는 순간ㅡ
 눈부시게 쏘아대던 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;스포트라이트&lt;/b&gt;&lt;/span&gt;가 전원이 나간 듯 &lt;span style=&quot;font-style: italic; color: #C7C7C7;&quot;&gt;&lt;b&gt;훅&lt;/b&gt;&lt;/span&gt; 꺼집니다.
 
 그제야 눈앞의 관객들 표정이 시야에 잘 보입니다.
@@ -3087,17 +3101,11 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="87" name="▶ 지하로 이동" tags="" position="2025,1625" size="100,100">&lt;br&gt;2층으로 오르는 철제 계단은 녹이 슬어 꺼멓게 얼룩져 있습니다.
-
-발을 올릴 때마다 삐그덕대는 불길한 소리가 울려,
-마치 계단 자체가 올라오지 말라고 경고하는 것 같습니다.
-
-
-[[▶ 장치실]]
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="86" name="▶ 지하로 이동" tags="" position="1850,2650" size="100,100">[[▶ 장치실]]
 [[▶ 소품 창고]]
 [[▶ 모니터링실]]
 
-[[▶ 윗층으로 이동-&gt;▶통로 안쪽으로 이동]] </tw-passagedata><tw-passagedata pid="88" name="▶ 천천히 무대에서 내려간다" tags="" position="1000,1875" size="100,100">&lt;br&gt;침묵 속에서 조심스레 무대 아래로 발을 옮깁니다.
+[[▶ 윗층으로 이동]]</tw-passagedata><tw-passagedata pid="87" name="▶ 천천히 무대에서 내려간다" tags="" position="1000,1875" size="100,100">&lt;br&gt;침묵 속에서 조심스레 무대 아래로 발을 옮깁니다.
 
 발끝이 나무 바닥을 끼익ㅡ 스칠 때마다, 극장 안의 정적이 더 짙게 가라앉습니다.
 
@@ -3123,9 +3131,9 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="89" name="▶ 캐비넷1" tags="" position="125,3375" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="90" name="▶ 캐비넷2" tags="" position="300,3550" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="91" name="▶ 캐비넷3" tags="" position="525,3450" size="100,100">손 소독제 획득
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="88" name="▶ 캐비넷1" tags="" position="125,3375" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="89" name="▶ 캐비넷2" tags="" position="300,3550" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="90" name="▶ 캐비넷3" tags="" position="525,3450" size="100,100">손 소독제 획득
 
-[[▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="92" name="▶ 캐비넷을 연다" tags="" position="1325,4000" size="100,100">&lt;div style=&quot;margin-bottom: 0;&quot;&gt;
+[[▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="91" name="▶ 캐비넷을 연다" tags="" position="1325,4000" size="100,100">&lt;div style=&quot;margin-bottom: 0;&quot;&gt;
   캐비넷은 잠겨 있습니다.
   확인하려면 비밀번호를 입력해야 합니다.&lt;script&gt;
   (function () {
@@ -3181,7 +3189,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="93" name="▶ 커튼 뒤쪽" tags="" position="1850,1375" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="94" name="▶ 티켓을 받아 입장한다" tags="" position="1000,900" size="100,100">&lt;br&gt;당신은 &lt;b&gt;VIP 티켓&lt;/b&gt;을 들고 입장 게이트를 통과합니다.&lt;br&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="92" name="▶ 커튼 뒤쪽" tags="" position="1850,1375" size="100,100">[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="93" name="▶ 티켓을 받아 입장한다" tags="1층" position="1000,875" size="100,100">&lt;br&gt;당신은 &lt;b&gt;VIP 티켓&lt;/b&gt;을 들고 입장 게이트를 통과합니다.&lt;br&gt;
 고풍스러운 황동 장식의 회전문이 천천히 돌아가고, 순간적으로 &lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;&lt;b&gt;사방의 소리가 뚝 끊긴 것 같은 정적&lt;/b&gt;&lt;/span&gt;이 지나갑니다.
 
 하지만 곧 웅장한 로비의 조명이 눈부시게 밝혀지고, &lt;span style=&quot;font-style: italic; color: gold;&quot;&gt;화려한 샹들리에&lt;/span&gt; 아래로 이끌리듯 발을 옮깁니다.
@@ -3215,7 +3223,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="95" name="▶ 편지 봉투를 확인한다" tags="" position="1300,2200" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _isNew = !$bag.includes(&quot;letterA&quot;)&gt;&gt;&lt;&lt;bagAdd &quot;letterA&quot;&gt;&gt;&lt;&lt;/silently&gt;&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="94" name="▶ 편지 봉투를 확인한다" tags="" position="1300,2200" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _isNew = !$bag.includes(&quot;letterA&quot;)&gt;&gt;&lt;&lt;bagAdd &quot;letterA&quot;&gt;&gt;&lt;&lt;/silently&gt;&gt;
 &lt;span style=&quot;color:pink; font-style:italic;&quot;&gt;Dear. MOM
 
 제가 드디어 &#39;TOSCA&#39; 공연에서 첫 주연을 맡아요!
@@ -3236,7 +3244,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 신문을 확인한다]]
 [[▶ 주변을 더 살펴본다-&gt;▶ 그냥 지나친다]]
-[[▶ 통로 안쪽으로 이동]]
+[[▶ 계단으로 이동]]
 
 &lt;&lt;if _isNew&gt;&gt;
 &lt;span class=&quot;notice-ok&quot;&gt;당신은 [누렇게 바랜 편지 봉투]를 가방 안에 넣었습니다.&lt;/span&gt;
@@ -3249,7 +3257,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="96" name="▶ 화이트보드 조사" tags="" position="700,3400" size="100,100">벽에 걸린 화이트보드를 살펴봅니다.
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="95" name="▶ 화이트보드 조사" tags="" position="675,3400" size="100,100">벽에 걸린 화이트보드를 살펴봅니다.
 보드 위에는 너무 낡고 바래서 흐릿해진 공연 일정표가 붙어 있습니다.
 
 그런데 &lt;b&gt;특정 날짜&lt;/b&gt; 이후로는 표가 뚝 끊겨 있는 듯 합니다.
@@ -3263,22 +3271,22 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 서랍 안 조사]]
 [[▶ 개인 창고 안쪽 조사]]
-[[▶ 다시 의상실로 이동한다-&gt;▶ 의상실 확인]]</tw-passagedata><tw-passagedata pid="97" name="▶ 휴게실 - 아쉽지만 없습니다" tags="" position="1625,3150" size="100,100">🚨
+[[▶ 다시 의상실로 이동한다-&gt;▶ 의상실 확인]]</tw-passagedata><tw-passagedata pid="96" name="▶ 휴게실 - 아쉽지만 없습니다" tags="" position="1625,3150" size="100,100">🚨
 
 
-[[▶ 밖으로 나간다-&gt;▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="98" name="▶ 휴게실 - 요원이 있습니다" tags="" position="1350,3100" size="100,100">🚨
+[[▶ 밖으로 나간다-&gt;▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="97" name="▶ 휴게실 - 요원이 있습니다" tags="" position="1350,3100" size="100,100">🚨
 
 
 
-[[▶ 밖으로 나간다-&gt;▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="99" name="▶ 흔들어 깨운다" tags="" position="1575,2875" size="100,100">🚨
+[[▶ 밖으로 나간다-&gt;▶ 좌측 복도]]</tw-passagedata><tw-passagedata pid="98" name="▶ 흔들어 깨운다" tags="" position="1575,2875" size="100,100">🚨
 
 [[▶ 휴게실 - 요원이 있습니다]]
-[[▶ 휴게실 - 아쉽지만 없습니다]]</tw-passagedata><tw-passagedata pid="100" name="▶조명실" tags="" position="1900,2425" size="100,100">🚨윗층 조명실에는 기괴한 스태프가 있다.
+[[▶ 휴게실 - 아쉽지만 없습니다]]</tw-passagedata><tw-passagedata pid="99" name="▶조명실" tags="" position="1900,2425" size="100,100">🚨윗층 조명실에는 기괴한 스태프가 있다.
 이 사람에게 눈알 캔디를 주면 CCTV 녹화본에 대한 힌트를 주고,
 머랭 쿠키를 주면 잡아먹힌다.
 
 
-[[▶ 윗층으로 이동]]</tw-passagedata><tw-passagedata pid="101" name="소독제_획득" tags="" position="550,2525" size="100,100">&lt;br&gt;여성이 사라지자 복도에 다시 숨 막히는 적막이 내려앉습니다.
+[[▶ 윗층으로 이동]]</tw-passagedata><tw-passagedata pid="100" name="소독제_획득" tags="" position="550,2525" size="100,100">&lt;br&gt;여성이 사라지자 복도에 다시 숨 막히는 적막이 내려앉습니다.
 
 코끝에 스치는 공기에 약한 쇠 비린내가 스미기 시작합니다.
 &lt;b&gt;한 걸음 더 내딛자, 벽에 비친 당신의 그림자가 반 박자 늦게 따라옵니다.&lt;/b&gt;
@@ -3286,7 +3294,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 앞으로 더 나아갈지, 윗층으로 이동해야할지 선택해야 합니다.
 
 
-[[▶ 윗층으로 이동]]
+[[▶ 2층으로 이동]]
 [[▶ 끝까지 이동해 본다]]
 
 
@@ -3302,7 +3310,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 &lt;&lt;set $lex.itemOpen.sanitizer = &quot;손에 문지르면 끈적한 잔흔이 사라질 것 같다.&lt;br&gt;몸이 더러워졌을 때 사용하면 도움이 될지도?&lt;br&gt;&lt;br&gt;&lt;&lt;link &#39;[즉시 사용]&#39;&gt;&gt;&lt;&lt;set $pollution = 0&gt;&gt;&lt;&lt;bagRemove &#39;sanitizer&#39;&gt;&gt;&lt;&lt;run SugarCube.Engine.play(State.passage)&gt;&gt;&lt;&lt;/link&gt;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;&lt;link &#39;[나중에 사용]&#39;&gt;&gt;&lt;&lt;run Dialog.close()&gt;&gt;&lt;&lt;/link&gt;&gt;&quot;&gt;&gt;
 &lt;&lt;set $lex.itemRemovable.sanitizer = false&gt;&gt;
 
-&lt;&lt;set $bag.push(&quot;sanitizer&quot;)&gt;&gt;  &lt;!-- 중복 허용 --&gt;</tw-passagedata><tw-passagedata pid="102" name="증거 불충분" tags="" position="1725,4400" size="100,100">🚨증거 불충분</tw-passagedata><tw-passagedata pid="103" name="키링-로비" tags="" position="225,650" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;
+&lt;&lt;set $bag.push(&quot;sanitizer&quot;)&gt;&gt;  &lt;!-- 중복 허용 --&gt;</tw-passagedata><tw-passagedata pid="101" name="증거 불충분" tags="" position="1725,4400" size="100,100">🚨증거 불충분</tw-passagedata><tw-passagedata pid="102" name="키링-로비" tags="" position="225,650" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;
 어라......?
 탈출 아이템 사용한 순간 갑자기 시간이 멈춥니다.
 
@@ -3326,12 +3334,29 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="104" name="키링-로비2" tags="" position="200,750" size="100,100">❤️&lt;br&gt;&lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;갑자기 알 수 없는 데쟈뷰가 느껴집니다.&lt;/b&gt;</tw-passagedata><tw-passagedata pid="105" name="키링-복도" tags="" position="150,1775" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _isNew = !$bag.includes(&quot;newspaper&quot;)&gt;&gt;&lt;&lt;bagAdd &quot;newspaper&quot;&gt;&gt;&lt;&lt;/silently&gt;&gt;&lt;br&gt;&lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;갑자기 알 수 없는 데쟈뷰가 느껴집니다.&lt;/b&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="103" name="키링-로비2" tags="" position="200,750" size="100,100">❤️&lt;br&gt;&lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;갑자기 알 수 없는 데쟈뷰가 느껴집니다.&lt;/b&gt;</tw-passagedata><tw-passagedata pid="104" name="키링-복도" tags="" position="150,1775" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _isNew = !$bag.includes(&quot;newspaper&quot;)&gt;&gt;&lt;&lt;bagAdd &quot;newspaper&quot;&gt;&gt;&lt;&lt;/silently&gt;&gt;&lt;br&gt;&lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;갑자기 알 수 없는 데쟈뷰가 느껴집니다.&lt;/b&gt;
 
 
+&lt;span style=&quot;color:#C7C7C7; font-style:italic;&quot;&gt;&lt;b&gt;루미에르 극장 신인 여배우, 공연 ‘토스카’ 이후 투신해 사망&lt;/b&gt;
+경찰 “범죄 정황 없음…정확한 경위 수사”
 
-[[▶ 통로 안쪽으로 이동]]
-</tw-passagedata><tw-passagedata pid="106" name="키링-상황" tags="" position="700,1925" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
+루미에르 극장의 ‘토스카’ 연장 공연 무대의 주연으로 첫 발탁된 신인 여배우 A씨가 공연 2주 후인 오늘 극장 옥상에서 추락해 숨졌다. A씨는 현장에서 병원으로 옮겨졌으나 사망이 확인됐다.
+
+경찰은 CCTV와 관계자 진술을 토대로 동선을 확인 중이며, 현재까지 범죄 혐의는 드러나지 않았다. 사망 경위와 시간대는 조사 중이다.
+
+1/3(토) 진행된 해당 공연은 극의 특정 장면에서 실수가 발생했던 것으로 알려졌으며, 공연 직후 현장과 온라인에서 “프로 의식이 부족하다”는 비난이 이어졌다.
+현장 조사 결과 동료들은 그녀가 “백스테이지에서 크게 흔들린 모습이 보였다”고 말했다.&lt;/span&gt;
+
+
+[[▶ 2층으로 이동]]
+
+&lt;&lt;if _isNew&gt;&gt;
+&lt;span class=&quot;notice-ok&quot;&gt;당신은 [구겨진 신문]을 가방 안에 넣었습니다.&lt;/span&gt;
+&lt;&lt;else&gt;&gt;
+  &lt;span class=&quot;notice-ok&quot;&gt;[구겨진 신문]은 이미 가방 안에 있습니다.&lt;/span&gt;
+&lt;&lt;/if&gt;&gt;
+
+  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="105" name="키링-상황" tags="" position="700,1925" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
 탈출 아이템 사용한 순간 갑자기 시간이 멈춥니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;가방 안에서 무언가 알 수 없는 빛이 뿜어져 나오고 있습니다.&lt;/b&gt;&lt;/span&gt;
@@ -3354,7 +3379,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="107" name="키링-상황2" tags="" position="800,1925" size="100,100">&lt;br&gt;서로 몇 마디를 주고받는 순간ㅡ
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="106" name="키링-상황2" tags="" position="800,1925" size="100,100">&lt;br&gt;서로 몇 마디를 주고받는 순간ㅡ
 눈부시게 쏘아대던 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;스포트라이트&lt;/b&gt;&lt;/span&gt;가 전원이 나간 듯 &lt;span style=&quot;font-style: italic; color: #C7C7C7;&quot;&gt;&lt;b&gt;훅&lt;/b&gt;&lt;/span&gt; 꺼집니다.
 
 그제야 눈앞의 관객들 표정이 시야에 잘 보입니다.
@@ -3374,7 +3399,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 [[▶ 천천히 무대에서 내려간다]]
 
 
-  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="108" name="키링-선물" tags="" position="175,2350" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
+  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="107" name="키링-선물" tags="" position="175,2350" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
 탈출 아이템 사용한 순간 갑자기 시간이 멈춥니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;가방 안에서 무언가 알 수 없는 빛이 뿜어져 나오고 있습니다.&lt;/b&gt;&lt;/span&gt;
@@ -3397,7 +3422,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="109" name="키링-선물2" tags="" position="175,2450" size="100,100">&lt;br&gt;&lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;갑자기 알 수 없는 데쟈뷰가 느껴집니다.&lt;/b&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="108" name="키링-선물2" tags="" position="175,2450" size="100,100">&lt;br&gt;&lt;span style=&quot;font-style: italic;&quot;&gt;&lt;b&gt;갑자기 알 수 없는 데쟈뷰가 느껴집니다.&lt;/b&gt;
 
 결국 복도 탐색을 멈추고 돌아가기로 결정합니다.
 다행히...... 돌아가는 길에 위험한 무언가와 맞닥뜨리지는 않았습니다.
@@ -3418,11 +3443,11 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 박스에 달린 종이 택에 &lt;span style=&quot;color: pink;&quot;&gt;&lt;b&gt;To. 에밀리아♥&lt;/b&gt;&lt;/span&gt; 라는 글자가 적혀 있습니다.
 
 
-[[▶ 건드리지 않고 이동-&gt;▶ 통로 안쪽으로 이동]]
+[[▶ 건드리지 않고 윗층 이동-&gt;▶ 2층으로 이동]]
 [[▶ 지하로 이동]]
 
 
-  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="110" name="키링2" tags="" position="50,1800" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
+  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="109" name="키링2" tags="" position="50,1800" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
 탈출 아이템 사용한 순간 갑자기 시간이 멈춥니다.
 
 &lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;가방 안에서 무언가 알 수 없는 빛이 뿜어져 나오고 있습니다.&lt;/b&gt;&lt;/span&gt;
@@ -3445,7 +3470,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="111" name="팝콘" tags="" position="1950,2050" size="100,100">&lt;br&gt;엇? 그런데 뭔가 이상합니다.
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="110" name="팝콘" tags="" position="1950,2050" size="100,100">&lt;br&gt;엇? 그런데 뭔가 이상합니다.
 
 그 순간, 가방 안쪽에서 &lt;b&gt;웅…웅…&lt;/b&gt; 하고 낮게 울리는 진동이 느껴집니다.
 조심스레 열어 보니, 스낵바에서 산 &lt;span style=&quot;color: gold;&quot;&gt;캐러멜 팝콘&lt;/span&gt; 봉지가—
@@ -3473,7 +3498,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 영영 집으로 돌아갈 수 없게 될 테니까요.&lt;/b&gt;&lt;/span&gt;
 
 
-[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="112" name="프로필" tags="" position="1350,200" size="100,100">:: StoryInit
+[[▶ 즉시 탈출 아이템 사용!]]</tw-passagedata><tw-passagedata pid="111" name="프로필" tags="" position="1350,200" size="100,100">:: StoryInit
 &lt;&lt;set $persona to $persona or &quot;dream&quot;&gt;&gt;  /* 기본값 */
 
 &lt;&lt;set $lex to $lex or {
@@ -3483,7 +3508,9 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 &lt;&lt;widget &quot;term&quot;&gt;&gt;
   &lt;&lt;set _k to _args[0]&gt;&gt;
   &lt;&lt;print $lex[_k][$persona] or $lex[_k].base or _k&gt;&gt;
-&lt;&lt;/widget&gt;&gt;</tw-passagedata><tw-passagedata pid="113" name="▶ 통로 안쪽으로 이동" tags="" position="1000,2450" size="100,100">[[▶ 2층으로 이동-&gt;▶ 윗층으로 이동]]
+&lt;&lt;/widget&gt;&gt;</tw-passagedata><tw-passagedata pid="112" name="▶ 2층으로 이동" tags="" position="1000,2550" size="100,100">[[▶ 좌측 복도]]
+[[▶ 우측 복도]]
+[[▶ 1층으로 이동]]</tw-passagedata><tw-passagedata pid="113" name="▶ 1층으로 이동" tags="" position="1225,2525" size="100,100"></tw-passagedata><tw-passagedata pid="114" name="▶ 계단으로 이동" tags="" position="1200,2400" size="100,100">[[▶ 2층으로 이동]]
 [[▶ 지하로 이동]]</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */
