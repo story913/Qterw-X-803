@@ -1916,7 +1916,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
       } else {
         if (fb) fb.innerHTML =
           &#39;&lt;span class=&quot;error&quot;&gt;입력하신 비밀번호가 틀렸습니다. (시도: &#39; +
-          S.pwWrongCount + &#39;/&#39; + MAX_TRIES + &#39;)&lt;/span&gt;&#39;;
+          S.pwWrongCount + &#39;/&#39; + MAX_TRIES + &#39;)&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;※ 만일 비밀번호 초기화 아이템을 지니고 있다면, 해당 팀원이 입력을 시도해 주십시오. (횟수 초과 시 사망)&lt;/span&gt;&lt;/span&gt;&#39;;
       }
     };
   })();
@@ -4444,7 +4444,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
       } else {
         if (fb) fb.innerHTML =
           &#39;&lt;span class=&quot;error&quot;&gt;입력하신 비밀번호가 틀렸습니다. (시도: &#39; +
-          S.pwWrongCount + &#39;/&#39; + MAX_TRIES + &#39;)&lt;/span&gt;&#39;;
+          S.pwWrongCount + &#39;/&#39; + MAX_TRIES + &#39;)&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;※ 만일 비밀번호 초기화 아이템을 지니고 있다면, 해당 팀원이 입력을 시도해 주십시오. (횟수 초과 시 사망)&lt;/span&gt;&lt;/span&gt;&#39;;
       }
     };
   })();
@@ -5055,7 +5055,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
       } else {
         if (fb) fb.innerHTML =
           &#39;&lt;span class=&quot;error&quot;&gt;입력하신 비밀번호가 틀렸습니다. (시도: &#39; +
-          S.pwWrongCount + &#39;/&#39; + MAX_TRIES + &#39;)&lt;/span&gt;&#39;;
+          S.pwWrongCount + &#39;/&#39; + MAX_TRIES + &#39;)&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;※ 만일 비밀번호 초기화 아이템을 지니고 있다면, 해당 팀원이 입력을 시도해 주십시오. (횟수 초과 시 사망)&lt;/span&gt;&lt;/span&gt;&#39;;
       }
     };
   })();
@@ -5598,7 +5598,20 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 ※ 아래 버튼을 눌러 아이템을 가방에 넣은 후, 탐사를 진행하십시오.
 해당 장소를 다시 방문하지 않고 빠른 진행이 가능합니다.
 
-[[💼 가방에 아이템 넣기-&gt;💼]]</tw-passagedata><tw-passagedata pid="144" name="사망" tags="" position="1350,50" size="100,100"></tw-passagedata><tw-passagedata pid="145" name="소독제" tags="no-bar" position="1300,1050" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _newNote = !$bag.includes(&quot;sanitizer&quot;)&gt;&gt;&lt;&lt;if _newNote&gt;&gt;&lt;&lt;bagAdd &quot;sanitizer&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;&lt;&lt;/silently&gt;&gt;
+[[💼 가방에 아이템 넣기-&gt;💼]]</tw-passagedata><tw-passagedata pid="144" name="사망" tags="" position="1350,50" size="100,100">&lt;br&gt;&lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;📢 클리어 실패&lt;/b&gt;&lt;/span&gt;
+
+조사원 님!
+해당 페이지를 확인한 즉시 이번 회차에 진행한 &lt;span style=&quot;color: red;&quot;&gt;&lt;b&gt;&lt;span class=&quot;inline-one&quot;&gt;&lt;&lt;term &quot;어둠&quot;&gt;&gt;&lt;/span&gt; 탐사&lt;/b&gt;&lt;/span&gt;를 멈추십시오.
+
+사망 또는 구출로 이어지는 응답 정보를 &#39;탐사 기록&#39; 스레드에 기재 부탁드립니다.
+
+탐사 종료 후 보고서 제출 시, 매뉴얼 제작에 큰 도움이 됩니다. :)
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;※ 양식은 탐사 규칙 게시물 확인 요망&lt;/span&gt;
+
+
+&lt;span style=&quot;color: black;&quot;&gt;.&lt;/span&gt;
+
+</tw-passagedata><tw-passagedata pid="145" name="소독제" tags="no-bar" position="1300,1050" size="100,100">&lt;&lt;silently&gt;&gt;&lt;&lt;set _newNote = !$bag.includes(&quot;sanitizer&quot;)&gt;&gt;&lt;&lt;if _newNote&gt;&gt;&lt;&lt;bagAdd &quot;sanitizer&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;&lt;&lt;/silently&gt;&gt;
 ※ 아래 버튼을 눌러 아이템을 가방에 넣은 후, 탐사를 진행하십시오.
 해당 장소를 다시 방문하지 않고 빠른 진행이 가능합니다.
 
