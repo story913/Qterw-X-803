@@ -105,7 +105,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="루미에르 시어터" startnode="7" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="16C2F5B3-1A65-425B-B46E-20113B1993C1" options="debug" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* === 기본 UI바 테마(PC+모바일 공통) === */
+	<tw-storydata name="루미에르 시어터" startnode="7" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="16C2F5B3-1A65-425B-B46E-20113B1993C1" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* === 기본 UI바 테마(PC+모바일 공통) === */
 #ui-bar {
   background-color: #000;
   color: #B8860B;
@@ -782,7 +782,7 @@ if (Config.uiBar) Config.uiBar.autohide = false;
 Config.ui.stowBarInitially = false;
 
 // Pollution
-const POLL_INCREMENT = 6;                   // 자동 증가치(%) — 필요시 0으로
+const POLL_INCREMENT = 4;                   // 자동 증가치(%) — 필요시 0으로
 const EXCLUDE_TAGS  = ['no-bar'];           // 오염도바 숨김 태그
 const LOC_TAGS      = ['1층', '2층', '지하', '외부', '옥상', '발코니']; 
 
@@ -2993,7 +2993,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="51" name="▶ 뛰어내린다" tags="발코니" position="2325,3925" size="100,100">&lt;br&gt;당신은 결국......
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="51" name="▶ 밑으로 뛰어내린다" tags="발코니" position="2325,3925" size="100,100">&lt;br&gt;당신은 결국......
 난간 아래로 떨어져 보기로 합니다.
 
 현실 상황이었다면, 당연히 말도 안 되는 선택이겠지만ㅡ
@@ -3172,9 +3172,9 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 당신의 손가락이 차가운 난간을 더 강하게 움켜쥡니다.
 
 
-[[▶ 뛰어내린다]]
 [[▶ 발코니 아래를 내려다본다]]
 [[▶ 건너편으로 이동한다]]
+[[▶ 밑으로 뛰어내린다]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -3488,7 +3488,9 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 수십 개의 날카로운 창날이 당신을 향해 돌진합니다.
 
 
-[[▶ 즉시 탈출 아이템 사용!]]
+&lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;
+[[▶ 즉시 탈출 아이템 사용!-&gt;키링-발코니]]&lt;&lt;else&gt;&gt;
+[[▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;
 
 
 &lt;span style=&quot;color: black;&quot;&gt;.&lt;/span&gt;</tw-passagedata><tw-passagedata pid="67" name="▶ 발코니로 오르는 리프트" tags="지하" position="2425,3175" size="100,100">&lt;br&gt;발코니로 오르는 리프트에 올라 천천히 위로 상승합니다.
@@ -3550,8 +3552,8 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 당신은 주변을 한 번 살피고, 바인더에서 해당 장을 똑—  떼어 가방 안에 넣습니다.
 
 
-[[▶ 밖으로 나간다-&gt;▶ 소품 창고]]
 [[▶ 소리가 나는 안쪽 확인]]
+[[▶ 출구 쪽으로 이동-&gt;▶ 소품 창고]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -3808,6 +3810,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 작은 방 확인]] 
 [[▶ 안쪽으로 이동]] 
+[[▶ 복도로 이동-&gt;지하 오른쪽 복도]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -3994,6 +3997,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 보고서부터 확인한다]] 
 [[▶ 소리가 나는 안쪽 확인]] 
+[[▶ 밖으로 이동-&gt;▶ 소품 창고]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -4679,7 +4683,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
   ※ 선택지를 함부로 누르지 마십시오!
   행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
   &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
-&lt;/p&gt;</tw-passagedata><tw-passagedata pid="108" name="▶ 작은 방 확인" tags="지하" position="2625,2325" size="100,100">&lt;br&gt;작은 방 안에는 상자들이 천장까지 쌓여 있습니다.
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="108" name="▶ 작은 방 확인" tags="지하" position="2625,2350" size="100,100">&lt;br&gt;작은 방 안에는 상자들이 천장까지 쌓여 있습니다.
 
 라벨에는 &lt;span style=&quot;color: gold;&quot;&gt;소형 소품/장비/악세서리/오페라글라스&lt;/span&gt; 등의 표기가 새겨져 있습니다.
 
@@ -4690,6 +4694,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 
 [[▶ 검은색 철제 상자]] 
 [[▶ 붉은색 트렁크]]
+[[▶ 밖으로 이동-&gt;▶ 소품 창고]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -5255,7 +5260,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 &lt;/p&gt;</tw-passagedata><tw-passagedata pid="127" name="▶ 통로를 이용해서 반대편으로 이동" tags="발코니" position="1975,3925" size="100,100">&lt;br&gt;그 순간, 누군가 당신과 팀원을 난간 아래 확 밀칩니다.
 허리가 공중으로 뒤집히며, 당신과 팀원은 발코니를 붙잡은 채 매달립니다.
 
-위를 올려다보자, 빛바랜 금빛 장식이 달린 코트를 입은 수상한 남자입니다.
+위를 올려다보자, 빛바랜 금빛 장식이 달린 단장 코트를 입은 수상한 남자입니다.
 
 &lt;span class=&quot;expand-red&quot; style=&quot;font-size:21px;&quot;&gt;그가 흰 장갑을 꼼지락거리며, 너무 많은 치아가 들어앉은 미소를 씩ㅡ 짓습니다.&lt;/span&gt;
 
@@ -5266,7 +5271,9 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 &lt;span style=&quot;font-style: italic; color: gray; font-size:21px;&quot;&gt;놓치면— 그대로 추락합니다.&lt;/span&gt;
 
 
-[[▶ 즉시 탈출 아이템 사용!]]
+&lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;
+[[▶ 즉시 탈출 아이템 사용!-&gt;키링-건너편]]&lt;&lt;else&gt;&gt;
+[[▶ 즉시 탈출 아이템 사용!]] /* 원래 가던 패시지 */&lt;&lt;/if&gt;&gt;
 
 
 &lt;span style=&quot;color: black;&quot;&gt;.&lt;/span&gt;</tw-passagedata><tw-passagedata pid="128" name="▶ 티켓을 받아 입장한다" tags="1층" position="1000,875" size="100,100">&lt;br&gt;당신은 &lt;b&gt;VIP 티켓&lt;/b&gt;을 들고 입장 게이트를 통과합니다.&lt;br&gt;
@@ -5623,6 +5630,7 @@ $(document).one(&#39;:passagedisplay&#39;, function () {
 앞으로 더 나아갈지, 윗층으로 이동해야할지 선택해야 합니다.
 
 [[▶ 2층으로 이동]]
+[[▶ 지하로 이동]]
 [[▶ 끝까지 이동해 본다]]
 &lt;div id=&quot;bagNotice&quot; style=&quot;margin:.25em 0 .4em; min-height:1.2em;&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
 &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
@@ -6324,6 +6332,128 @@ J3 - 오염도 영향 안 받음 (진입 시 키티 지급) + 괴생명체 제�
 &lt;span id=&quot;rescue&quot;&gt;&lt;&lt;if $bag.includes(&quot;R5&quot;)&gt;&gt;&lt;span style=&quot;color: gray; font-weight: bold; font-size: 22px;&quot;&gt;&lt;b&gt;▶ 이미 구조를 완료했습니다&lt;/b&gt;&lt;/span&gt;&lt;&lt;else&gt;&gt;&lt;&lt;link &quot;▶ 생존자 위치 기록&quot;&gt;&gt;&lt;&lt;bagAdd &quot;R5&quot;&gt;&gt;&lt;&lt;replace &quot;#rescue&quot;&gt;&gt;&lt;span style=&quot;color: gray; font-weight: bold; font-size: 22px;&quot;&gt;▶ 가방 속 메모지 - 기록 완료&lt;/span&gt;&lt;&lt;/replace&gt;&gt;&lt;&lt;if $bagOpen&gt;&gt;&lt;&lt;replace &quot;#bagArea&quot;&gt;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;&lt;/replace&gt;&gt;&lt;&lt;/if&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/if&gt;&gt;&lt;/span&gt;
 [[▶ 조리실로 돌아간다-&gt;▶ 조리실을 확인한다]]
 [[▶ 다른 곳을 확인한다-&gt;지하 왼쪽 복도]]
+
+
+  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
+&lt;p class=&quot;warn&quot; style=&quot;color: gray; font-family: &#39;Noto Sans KR&#39;, sans-serif; font-variant: condensed; margin:.4em 0 0;&quot;&gt;
+  ※ 선택지를 함부로 누르지 마십시오!
+  행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
+  &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="174" name="키링-발코니" tags="" position="2550,3950" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
+탈출 아이템을 사용한 순간 갑자기 시간이 멈춥니다.
+
+&lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;가방 안에서 무언가 알 수 없는 빛이 뿜어져 나오고 있습니다.&lt;/b&gt;&lt;/span&gt;
+
+잠시 시간이 멈춘 듯한 사이, 가방을 열어 봅니다.
+노점상에서 구매한 하트 모양 유리 키링이 영롱하게 빛나고 있습니다.
+
+당신은 하트 모양 유리 키링을 가방 안에서 꺼냅니다.
+
+
+&lt;&lt;link &quot;▶ 키링에서 나오는 빛을 확인한다&quot;&gt;&gt;
+  &lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;&lt;&lt;bagRemove &quot;heart&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
+  &lt;&lt;if $bag.includes(&quot;caramel&quot;)&gt;&gt;&lt;&lt;bagRemove &quot;caramel&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
+  &lt;&lt;goto &quot;키링-발코니2&quot;&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+
+&lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
+&lt;div class=&quot;warn&quot; style=&quot;color: gray; font-family: &#39;Noto Sans KR&#39;, sans-serif; font-variant: condensed; margin:.4em 0 0;&quot;&gt;
+  ※ 선택지를 함부로 누르지 마십시오!
+  행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
+  &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="175" name="키링-건너편" tags="" position="1975,4050" size="100,100">&lt;span class=&quot;notice-ok&quot;&gt;&lt;br&gt;어라......?
+탈출 아이템을 사용한 순간 갑자기 시간이 멈춥니다.
+
+&lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;가방 안에서 무언가 알 수 없는 빛이 뿜어져 나오고 있습니다.&lt;/b&gt;&lt;/span&gt;
+
+잠시 시간이 멈춘 듯한 사이, 가방을 열어 봅니다.
+노점상에서 구매한 하트 모양 유리 키링이 영롱하게 빛나고 있습니다.
+
+당신은 하트 모양 유리 키링을 가방 안에서 꺼냅니다.
+
+
+&lt;&lt;link &quot;▶ 키링에서 나오는 빛을 확인한다&quot;&gt;&gt;
+  &lt;&lt;if $bag.includes(&quot;heart&quot;)&gt;&gt;&lt;&lt;bagRemove &quot;heart&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
+  &lt;&lt;if $bag.includes(&quot;caramel&quot;)&gt;&gt;&lt;&lt;bagRemove &quot;caramel&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
+  &lt;&lt;goto &quot;키링-건너편2&quot;&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+
+&lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
+&lt;div class=&quot;warn&quot; style=&quot;color: gray; font-family: &#39;Noto Sans KR&#39;, sans-serif; font-variant: condensed; margin:.4em 0 0;&quot;&gt;
+  ※ 선택지를 함부로 누르지 마십시오!
+  행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
+  &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="176" name="키링-건너편2" tags="" position="1975,4150" size="100,100">&lt;br&gt;&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;&lt;b&gt;...... 갑자기 알 수 없는 데자뷰가 느껴집니다.
+.
+.
+.&lt;/b&gt;&lt;/span&gt;
+
+당신은 발코니 가장자리로 한 걸음 다가갑니다.
+발코니 난간의 차가운 금속이 맞닿은 손바닥의 열을 훔쳐갑니다.
+
+메인 홀에는 어둡고 조용한 적막만 가라앉아 있습니다.
+난간 너머 객석은  마치 검은 바다처럼 드넓게 펼쳐져 있는 듯합니다.
+
+&lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;이제는 무엇을 해야 할지, 잠깐 멈춰 생각합니다.&lt;/b&gt;&lt;/span&gt;
+
+완성시키지 못한 마지막 장면을, 대신 완성해 줘야 할까요?
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;ㅡ하지만 발코니 세트 아래로 무작정 뛰어내렸다가,
+운이 나쁘면 목뼈 골절로 인한 사망인데요.&lt;/span&gt;
+
+이 발코니 아래가 어떤 상황인지 한번 내려다볼까요?
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;ㅡ어쩌면 지금은 안전한 상태일지도 모르니까 말입니다.&lt;/span&gt;
+
+아니면, 우선은 주변을 더 둘러보는 방법도 있습니다.
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;ㅡ보행로를 따라 측면으로 붙으면 건너편으로 넘어갈 수 있습니다.&lt;/span&gt;
+
+
+...... 잠시간 호흡을 고릅니다.
+당신의 손가락이 차가운 난간을 더 강하게 움켜쥡니다.
+
+
+[[▶ 밑으로 뛰어내린다]]
+[[▶ 발코니 아래를 내려다본다]]
+[[▶ 건너편으로 이동한다]]
+
+
+  &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
+&lt;p class=&quot;warn&quot; style=&quot;color: gray; font-family: &#39;Noto Sans KR&#39;, sans-serif; font-variant: condensed; margin:.4em 0 0;&quot;&gt;
+  ※ 선택지를 함부로 누르지 마십시오!
+  행동하기 전 &lt;span style=&quot;text-decoration: underline;&quot;&gt;반드시&lt;/span&gt; 팀원과 논의 후 동일한 응답을 고르십시오.
+  &lt;span style=&quot;color: yellow;&quot;&gt;※ 경고를 무시하고 진행할 시 돌이킬 수 없는 결과가 발생할 수 있습니다.&lt;/span&gt;
+&lt;/p&gt;</tw-passagedata><tw-passagedata pid="177" name="키링-발코니2" tags="" position="2550,4050" size="100,100">&lt;br&gt;&lt;span style=&quot;font-style: italic; color: gray;&quot;&gt;&lt;b&gt;...... 갑자기 알 수 없는 데자뷰가 느껴집니다.
+.
+.
+.&lt;/b&gt;&lt;/span&gt;
+
+당신은 발코니 가장자리로 한 걸음 다가갑니다.
+발코니 난간의 차가운 금속이 맞닿은 손바닥의 열을 훔쳐갑니다.
+
+메인 홀에는 어둡고 조용한 적막만 가라앉아 있습니다.
+난간 너머 객석은  마치 검은 바다처럼 드넓게 펼쳐져 있는 듯합니다.
+
+&lt;span style=&quot;color: gold;&quot;&gt;&lt;b&gt;이제는 무엇을 해야 할지, 잠깐 멈춰 생각합니다.&lt;/b&gt;&lt;/span&gt;
+
+완성시키지 못한 마지막 장면을, 대신 완성해 줘야 할까요?
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;ㅡ하지만 발코니 세트 아래로 무작정 뛰어내렸다가,
+운이 나쁘면 목뼈 골절로 인한 사망인데요.&lt;/span&gt;
+
+이 발코니 아래가 어떤 상황인지 한번 내려다볼까요?
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;ㅡ어쩌면 지금은 안전한 상태일지도 모르니까 말입니다.&lt;/span&gt;
+
+아니면, 우선은 주변을 더 둘러보는 방법도 있습니다.
+&lt;span style=&quot;font-style: italic; color: gray; font-size:20px;&quot;&gt;ㅡ보행로를 따라 측면으로 붙으면 건너편으로 넘어갈 수 있습니다.&lt;/span&gt;
+
+
+...... 잠시간 호흡을 고릅니다.
+당신의 손가락이 차가운 난간을 더 강하게 움켜쥡니다.
+
+
+[[▶ 밑으로 뛰어내린다]]
+[[▶ 발코니 아래를 내려다본다]]
+[[▶ 건너편으로 이동한다]]
 
 
   &lt;div id=&quot;bagArea&quot; style=&quot;display:block; width:100%; margin:0; padding:0;&quot;&gt;&lt;&lt;renderBagToggle&gt;&gt;&lt;/div&gt;
